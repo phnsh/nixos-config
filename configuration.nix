@@ -111,6 +111,8 @@
   #  wget
     pkgs.go
     pkgs.git
+    pkgs.vscode
+    pkgs.wget
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -161,7 +163,7 @@
       {
         settings = {
           "org/gnome/desktop/wm/preferences" = {
-            button-layout = "close:minimize,maximize";
+            button-layout = "close,minimize,maximize:";
           };
         };
       }
