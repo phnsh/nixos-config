@@ -8,7 +8,12 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      <home-manager/nixos> # home manager
     ];
+
+  home-manager.useGlobalPkgs = true;
+  home-manager.useUserPackages = true;
+  home-manager.users.punx = import ./home.nix;
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -44,6 +49,9 @@
 
   # Enable the X11 windowing system.
   services.xserver.enable = true;
+
+  # enable hyprland
+  programs.hyprland.enable = true;
 
   # Enable the XFCE Desktop Environment.
   # services.xserver.displayManager.lightdm.enable = true;
@@ -89,12 +97,6 @@
     packages = with pkgs; [
     #  thunderbird
     ];
-    #dconf.settings = {
-    #  "org/gnome/desktop/wm/preferences" = {
-    #    button-layout = "close,minimize,maximize:appmenu";
-    #    num-workspaces = 10;
-    #  };
-    #};
   };
 
   # Install firefox.
@@ -109,18 +111,15 @@
   environment.systemPackages = with pkgs; [
   #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
   #  wget
-    pkgs.go
-    pkgs.git
-    pkgs.vscode
-    pkgs.wget
+    pkgs.redshift
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
   # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
+  #    enable = true;
+  #    enableSSHSupport = true;
   # };
 
   # List services that you want to enable:
@@ -142,11 +141,28 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "24.11"; # Did you read the comment?
 
+  location.latitude = 19.0760;
+  location.longitude = 72.8777;
+
+  services.redshift = {
+    enable = true;
+    brightness = {
+      day = "1.0";
+      night = "0.8";
+    };
+    temperature = {
+      day = 5500;
+      night = 4000;
+    };
+  };
+
   services.xserver = {
       displayManager.gdm.enable = true;
       desktopManager.gnome.enable = true;
       displayManager.lightdm.enable = false;
-      desktopManager.xfce.enable = false;
+      desktopManager.xfce.enable = true;
+      # enable TWM
+      windowManager.i3.enable = true;
       
       #desktopManager.gnome.extraGSettingsOverrides = ''
       #  [org.gnome.desktop.wm.preferences]
@@ -155,19 +171,16 @@
       #desktopManager.gnome.desktop.wm.preferences = {
       #  button-layout = "close:minimize,maximize";
       #};
-      
     };
     
+    # Optional: Add common portal configuration for better compatibility
+    xdg.portal.enable = true;
+    xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ]; #
+
+    # Enable NetworkManager applet (useful for both DEs)
+    programs.nm-applet.enable = true; #
+
   programs = {
-    dconf.profiles.user.databases = [
-      {
-        settings = {
-          "org/gnome/desktop/wm/preferences" = {
-            button-layout = "close,minimize,maximize:";
-          };
-        };
-      }
-    ];
     firefox = {
       enable = true;
       policies = {
@@ -201,8 +214,18 @@
           };
         };
       };
+    };
   };
-};
+
+  fonts = {
+    enableDefaultPackages = true;
+    packages = with pkgs; [
+      # Add the Noto fonts, which include support for Kannada
+      noto-fonts-extra
+      noto-fonts-cjk-sans
+      noto-fonts-emoji
+    ];
+  };
 }
 
 # addons.mozilla.org/firefox/downloads/latest/ADDON_NAME/addon-ADDON_ACCOUNT_ID-latest.xpi

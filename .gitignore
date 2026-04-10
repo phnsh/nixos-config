@@ -1,0 +1,8 @@
+# nix build results
+result
+result-*
+
+# swap and temp files
+*.swp
+*~
+.DS_Store
