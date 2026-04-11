@@ -10,7 +10,6 @@
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "nvme" "usbhid" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ ];
-  boot.initrd.supportedFilesystems = [ "btrfs" ];
   boot.initrd.luks.devices."luks-7f58b1e4-4ddf-44a6-be4c-47262f583f32".device = "/dev/disk/by-uuid/7f58b1e4-4ddf-44a6-be4c-47262f583f32";
   boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
