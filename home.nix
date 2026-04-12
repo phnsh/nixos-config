@@ -19,12 +19,51 @@
     pkgs.polkit_gnome
   ]; 
 
+  home.pointerCursor = {
+    gtk.enable = true;
+    # x11.enable = true; # Keep this on for any remaining Xwayland apps
+    package = pkgs.adwaita-icon-theme;
+    name = "Adwaita";
+    size = 24;
+  };
+
   home.sessionVariables = {
     EDITOR = "nano";
     # Forces Electron apps (VS Code, Discord, Obsidian) to use Wayland
     NIXOS_OZONE_WL = "1"; 
     # Specifically tells Firefox to use Wayland
     MOZ_ENABLE_WAYLAND = "1";
+  };
+
+  services.kanshi = {
+    enable = true;
+    systemdTarget = "hyprland-session.target";
+    profiles = {
+      # Profile 1: Only Laptop
+      undocked = {
+        outputs = [
+          {
+            criteria = "eDP-1";
+            status = "enable";
+          }
+        ];
+      };
+      # Profile 2: Monitor Plugged In (Laptop Off)
+      docked = {
+        outputs = [
+          {
+            criteria = "eDP-1";
+            status = "disable";
+          }
+          {
+            # Use '*' to match any external monitor, 
+            # or use the name from 'hyprctl monitors'
+            criteria = "*"; 
+            status = "enable";
+          }
+        ];
+      };
+    };
   };
 
   programs.waybar = {
@@ -160,9 +199,22 @@
     enable = true;
     xwayland.enable = true;
     settings = {
+      workspace = [
+        "1, monitor:desc:HDMI-A-1, default:true"
+        "2, monitor:desc:HDMI-A-1"
+        "3, monitor:desc:HDMI-A-1"
+      ];
+
       animations = {
         enabled = false;
       };
+
+      windowrulev2 = [
+        "workspace 1, initialClass:^(kitty)$"
+        "workspace 2, initialClass:^(Code)$"
+        "workspace 2, title:^(.*Visual Studio Code.*)$" # Backup rule using title
+        "workspace 3, initialClass:^(firefox)$"
+      ];
 
       decoration = {
         rounding = 0;
@@ -186,9 +238,6 @@
         "dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
         "waybar"
-        "[workspace 1 silent] kitty"
-        "[workspace 2 silent] code"
-        "[workspace 3 silent] firefox"
       ];
       "$mainMod" = "SUPER";
       bind = [
@@ -236,16 +285,26 @@
       # MONITOR FIX: 
       # Disable laptop screen to force everything to your extended monitor
       # Replace 'eDP-1' with your actual laptop screen name if it differs
-      monitor = [
-        "eDP-1, disable"
-        ", preferred, auto, 1"
-      ];
+      # monitor = [
+      #   "monitor = eDP-1, 1920x1080@60, 0x0, 1"     # Internal Laptop
+      #   "monitor = , preferred, auto, 1"            # External (Any)
+      # ];
     };
   };
 
   # NEW: VS Code Configuration Module
   programs.vscode = {
     enable = true;
+    package = (pkgs.vscode.override {
+      commandLineArgs = [
+        "--ozone-platform-hint=auto"
+        "--ozone-platform=wayland"
+        "--enable-features=WaylandWindowDecorations"
+      ];
+    }).overrideAttrs (oldAttrs: {
+      # This ensures the desktop entry also uses the flags
+      desktopItems = oldAttrs.desktopItems or [];
+    });
     # This automatically installs the extensions for you
     extensions = with pkgs.vscode-extensions; [
       ms-python.python
