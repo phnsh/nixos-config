@@ -225,6 +225,9 @@
     settings = {
       copy_on_select = "yes";
       background_opacity = "0.8"; # Adjust between 0.0 and 1.0
+      touch_scroll_multiplier = "5.0";
+      # You might also want to boost the wheel scroll if you use a mouse
+      wheel_scroll_multiplier = "5.0";
     };
   };
 
