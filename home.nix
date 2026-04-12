@@ -22,6 +22,7 @@
     pkgs.wlsunset
     pkgs.bluetui
     pkgs.libnotify    # This provides notify-send
+    pkgs.btop
   ];
 
   home.pointerCursor = {
@@ -41,6 +42,23 @@
   };
 
   services.swayosd.enable = true;
+
+  home.file.".config/kitty/dev.session".text = ''
+    new_tab go
+    cd ~/projects/
+    launch bash
+
+    new_tab git
+    cd ~/projects/
+    launch bash
+
+    new_tab nix
+    cd ~/git-stuff/nixos-config
+    launch bash
+
+    new_tab Monitor
+    launch btop
+  '';
 
   services.wlsunset = {
     enable = true;
