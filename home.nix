@@ -21,6 +21,7 @@
     pkgs.swayosd
     pkgs.wlsunset
     pkgs.bluetui
+    pkgs.libnotify    # This provides notify-send
   ];
 
   home.pointerCursor = {
@@ -43,11 +44,11 @@
 
   services.wlsunset = {
     enable = true;
-    latitude = "12.97";
-    longitude = "77.59"; # Bangalore coordinates
+    sunrise = "07:00";
+    sunset = "18:00";
     temperature = {
       day = 6500;
-      night = 4000;
+      night = 4500;
     };
   };
 
@@ -92,7 +93,15 @@
           height = 30;
           modules-left = [ "hyprland/workspaces" ];
           modules-center = [ "hyprland/window" ];
-          modules-right = [ "network" "cpu" "memory" "temperature" "battery" "clock" "tray" ];
+          modules-right = [ "bluetooth" "network" "cpu" "memory" "temperature" "battery" "clock" "tray" ];
+
+          "bluetooth" = {
+            "format-on" = " ON";
+            "format-off" = "󰂲 OFF";
+            "format-connected" = " {device_alias}";
+            # Clicking the icon now also sends the notification
+            "on-click" = "bluetoothctl show | grep -q 'Powered: yes' && (bluetoothctl power off && notify-send 'Bluetooth' 'Switched OFF') || (bluetoothctl power on && notify-send 'Bluetooth' 'Switched ON')";
+          };
 
           "network" = {
             format-wifi = "  {essid} ({signalStrength}%)";
@@ -317,7 +326,8 @@
         # Toggle Wi-Fi
         "$mainMod, W, exec, nmcli radio wifi $(nmcli radio wifi | grep -q 'enabled' && echo 'off' || echo 'on')"
         # Toggle Bluetooth
-        "$mainMod, B, exec, bluetoothctl show | grep -q 'Powered: yes' && bluetoothctl power off || bluetoothctl power on"
+        # "$mainMod, B, exec, bluetoothctl show | grep -q 'Powered: yes' && bluetoothctl power off || bluetoothctl power on"
+        "$mainMod, B, exec, bluetoothctl show | grep -q 'Powered: yes' && (bluetoothctl power off && notify-send 'Bluetooth' 'Switched OFF') || (bluetoothctl power on && notify-send 'Bluetooth' 'Switched ON')"
 
         # for testing
         "ALT, RETURN, exec, kitty"
