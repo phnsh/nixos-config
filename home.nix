@@ -17,7 +17,11 @@
     pkgs.nautilus   # A file manager for GNOME/Hyprland
     pkgs.wofi
     pkgs.polkit_gnome
-  ]; 
+    pkgs.brightnessctl
+    pkgs.swayosd
+    pkgs.wlsunset
+    pkgs.bluetui
+  ];
 
   home.pointerCursor = {
     gtk.enable = true;
@@ -35,35 +39,48 @@
     MOZ_ENABLE_WAYLAND = "1";
   };
 
+  services.swayosd.enable = true;
+
+  services.wlsunset = {
+    enable = true;
+    latitude = "12.97";
+    longitude = "77.59"; # Bangalore coordinates
+    temperature = {
+      day = 6500;
+      night = 4000;
+    };
+  };
+
   services.kanshi = {
     enable = true;
     systemdTarget = "hyprland-session.target";
-    profiles = {
-      # Profile 1: Only Laptop
-      undocked = {
-        outputs = [
+    settings = [
+      {
+        profile.name = "undocked";
+        profile.outputs = [
           {
             criteria = "eDP-1";
             status = "enable";
+            mode = "1920x1080@60"; # Forces native res for that "huge" feel
+            scale = 1.0;           # Prevents the "zoomed in" look
           }
         ];
-      };
-      # Profile 2: Monitor Plugged In (Laptop Off)
-      docked = {
-        outputs = [
+      }
+      {
+        profile.name = "docked";
+        profile.outputs = [
           {
             criteria = "eDP-1";
             status = "disable";
           }
           {
-            # Use '*' to match any external monitor, 
-            # or use the name from 'hyprctl monitors'
             criteria = "*"; 
             status = "enable";
+            scale = 1.0;
           }
         ];
-      };
-    };
+      }
+    ];
   };
 
   programs.waybar = {
@@ -194,11 +211,53 @@
     };
   };
 
+  programs.kitty = {
+    enable = true;
+    settings = {
+      copy_on_select = "yes";
+      background_opacity = "0.8"; # Adjust between 0.0 and 1.0
+    };
+  };
+
   # This will generate ~/.config/hypr/hyprland.conf for you
   wayland.windowManager.hyprland = {
     enable = true;
     xwayland.enable = true;
     settings = {
+      decoration = {
+        rounding = 10;
+        blur = {
+          enabled = true; # Must be true for the window rule to work
+          size = 8;
+          passes = 2;
+          new_optimizations = true; # Saves GPU by not re-rendering static blurs
+          xray = true; # Further optimization
+        };
+      };
+
+      # This ensures the blur effect ignores the window's own shadow/elements
+      blurls = [ "kitty" ];
+
+      bindle = [
+        # Brightness Keys
+        # Volume with OSD
+        ", XF86AudioRaiseVolume, exec, swayosd-client --output-volume raise"
+        ", XF86AudioLowerVolume, exec, swayosd-client --output-volume lower"
+        ", XF86AudioMute, exec, swayosd-client --output-volume mute-toggle"
+
+        # Raw steps for maximum precision
+        ", XF86MonBrightnessUp, exec, swayosd-client --brightness +1"
+        # We run brightnessctl second to ensure it catches the '0' state and bumps it to 1
+        ", XF86MonBrightnessDown, exec, swayosd-client --brightness -1; brightnessctl set 1+"
+      ];
+
+      input = {
+        touchpad = {
+          natural_scroll = true;
+          tap-to-click = true;
+          scroll_factor = 0.5; # Optional: Adjust this if scrolling feels too fast
+        };
+      };
       workspace = [
         "1, monitor:desc:HDMI-A-1, default:true"
         "2, monitor:desc:HDMI-A-1"
@@ -214,18 +273,19 @@
         "workspace 2, initialClass:^(Code)$"
         "workspace 2, title:^(.*Visual Studio Code.*)$" # Backup rule using title
         "workspace 3, initialClass:^(firefox)$"
+        "opacity 0.8 0.8, class:^(kitty)$"
       ];
 
-      decoration = {
-        rounding = 0;
-        # THE FIX: shadows are now in their own block
-        shadow = {
-          enabled = false;
-        };
-        blur = {
-          enabled = false;
-        };
-      };
+      # decoration = {
+      #   rounding = 0;
+      #   # THE FIX: shadows are now in their own block
+      #   shadow = {
+      #     enabled = false;
+      #   };
+      #   # blur = {
+      #   #   enabled = false;
+      #   # };
+      # };
 
       misc = {
         # Drastically reduces CPU/GPU wakeups
@@ -238,6 +298,7 @@
         "dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
         "waybar"
+        "swayosd-libinput-backend"
       ];
       "$mainMod" = "SUPER";
       bind = [
@@ -252,6 +313,11 @@
         "$mainMod, up, movefocus, u"
         "$mainMod, down, movefocus, d"
         "$mainMod, F, fullscreen, 1"
+
+        # Toggle Wi-Fi
+        "$mainMod, W, exec, nmcli radio wifi $(nmcli radio wifi | grep -q 'enabled' && echo 'off' || echo 'on')"
+        # Toggle Bluetooth
+        "$mainMod, B, exec, bluetoothctl show | grep -q 'Powered: yes' && bluetoothctl power off || bluetoothctl power on"
 
         # for testing
         "ALT, RETURN, exec, kitty"
@@ -285,10 +351,11 @@
       # MONITOR FIX: 
       # Disable laptop screen to force everything to your extended monitor
       # Replace 'eDP-1' with your actual laptop screen name if it differs
-      # monitor = [
-      #   "monitor = eDP-1, 1920x1080@60, 0x0, 1"     # Internal Laptop
-      #   "monitor = , preferred, auto, 1"            # External (Any)
-      # ];
+      # Correct syntax if you weren't using Kanshi:
+      monitor = [
+        "eDP-1, 1920x1080@60, 0x0, 1"
+        ", preferred, auto, 1"
+      ];
     };
   };
 
