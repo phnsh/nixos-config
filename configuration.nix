@@ -11,9 +11,13 @@
       <home-manager/nixos> # home manager
     ];
 
-  home-manager.useGlobalPkgs = true;
-  home-manager.useUserPackages = true;
-  home-manager.users.punx = import ./home.nix;
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    backupFileExtension = "backup";
+    users.punx = import ./home.nix;
+  };
+
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -52,6 +56,12 @@
 
   # enable hyprland
   programs.hyprland.enable = true;
+
+  services.dbus.enable = true;
+
+  security.polkit.enable = true;
+
+  services.displayManager.sessionPackages = [ pkgs.hyprland ];
 
   # Enable the XFCE Desktop Environment.
   # services.xserver.displayManager.lightdm.enable = true;
@@ -174,8 +184,14 @@
     };
     
     # Optional: Add common portal configuration for better compatibility
-    xdg.portal.enable = true;
-    xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ]; #
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ 
+      pkgs.xdg-desktop-portal-hyprland 
+      pkgs.xdg-desktop-portal-gtk 
+    ];
+    config.common.default = "*"; # Critical for cross-DE compatibility
+  };
 
     # Enable NetworkManager applet (useful for both DEs)
     programs.nm-applet.enable = true; #
@@ -224,6 +240,7 @@
       noto-fonts-extra
       noto-fonts-cjk-sans
       noto-fonts-emoji
+      nerdfonts
     ];
   };
 }
